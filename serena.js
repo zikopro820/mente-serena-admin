@@ -356,6 +356,3 @@ document.addEventListener("click", e => {
   openWA(c.celular, `Hola ${c.dueno.split(" ")[0]}, bienvenido(a) a *${NOMBRE_V}* 🌿\n\nTu código de paciente es: *${c.codigo || CUR.code}*\n\nCon él entras a *Mi Espacio*: tus próximas sesiones, el enlace de la videollamada, tus paquetes, tareas y documentos (recibos, recetas y constancias):\n${portalLink(c.codigo || CUR.code)}\n\nGuárdalo y no lo compartas: es personal.`);
 }, true);
 
-/* ---------- Todos los módulos cargados: recién ahora se abre la sesión ---------- */
-window.__panelListo = true;
-window.dispatchEvent(new Event("panel-listo"));

@@ -217,7 +217,8 @@ async function venderPaquete() {
     ${fld("enviar", "Enviar confirmación por WhatsApp", true, { type: "checkbox", full: true })}
   </div>`, async d => {
     const precio = r2(d.precio), pago = Math.min(r2(d.pago || 0), precio), ses = Math.max(1, Math.round(+d.ses || 1));
-    const p = { id: uid(), t: d.t, ses, usadas: 0, precio, pagado: pago, desde: todayISO(), vence: addDays(todayISO(), Math.round((+d.meses || 4) * 30.4)) };
+    const tp = tipos.find(x => x.id === d.tipo);
+    const p = { id: uid(), t: d.t, ses, usadas: 0, precio, pagado: pago, desde: todayISO(), vence: addDays(todayISO(), Math.round((+d.meses || 4) * 30.4)), servicio: tp ? tp.servicio : "" };
     const pagos = pago ? [{ monto: pago, metodo: d.metodo, fecha: todayISO(), hora: nowHM() }] : [];
     const his = [...(m.historial || []), { id: uid(), paqId: p.id, f: todayISO(), hora: nowHM(), t: d.t, vet: "", monto: precio, pagado: pago, pagos, compra: true }];
     if (pago) await DB.saveDocCol("movimientos", null, { fecha: todayISO(), hora: nowHM(), tipo: "servicio", concepto: `${d.t} – ${m.nombre}${pago < precio ? " (adelanto)" : ""}`, total: pago, metodo: d.metodo, items: [{ tipo: "paquete", n: d.t, q: 1, p: pago }], code: CUR.code, cliente: CUR.cliente.dueno, anulado: false });
@@ -398,48 +399,97 @@ recForm = function () {   // eslint-disable-line no-global-assign
 const avisadoR = f => f && diff(f) >= -10;
 async function recordatoriosData() {
   const hoy = todayISO(), man = addDays(hoy, 1);
-  const [ms, cs] = await Promise.all([DB.allMascotas(), DB.rango("citas", addDays(hoy, -60), addDays(hoy, 60))]);
-  const out = { manana: [], paquetes: [], saldos: [], inactivos: [], controles: [], cuotas: [], limpieza: [] };
+  const [ms, cs] = await Promise.all([DB.allMascotas(), DB.rango("citas", addDays(hoy, -120), addDays(hoy, 120))]);
+  const out = { manana: [], recs: [], paqTodos: [], paquetes: [], saldos: [], inactivos: [], controles: [], cuotas: [], limpieza: [] };
   cs.filter(c => c.fecha === man && c.estado === "confirmada").sort((a, b) => a.hora.localeCompare(b.hora)).forEach(c => out.manana.push({ c }));
   ms.forEach(m => {
-    (m.paquetes || []).forEach((p, pi) => { const e = paqEstado(p); if ((e.quedan <= 1 && e.us > 0) || (e.dv != null && e.dv <= 14 && e.quedan > 0)) out.paquetes.push({ m, p, pi, e }); if (e.saldo > 0) out.saldos.push({ m, p, pi, e }); });
-    (m.rec || []).forEach(r => { const d = diff(r.f); if (d >= -14 && d <= 7) out.controles.push({ m, r }); });
+    // paquetes: todos los que tienen sesiones o deuda (o terminaron hace menos de 30 días)
+    (m.paquetes || []).forEach((p, pi) => {
+      const e = paqEstado(p), res = cs.filter(c => c.code === m.code && c.mascotaId === m.id && c.paqueteId === p.id && c.estado === "confirmada" && c.fecha >= hoy).length;
+      const recien = e.quedan === 0 && (!p.vence || diff(p.vence) >= -30) && (m.historial || []).some(h => h.paquete && diff(h.f) >= -30);
+      if (e.quedan > 0 || e.saldo > 0 || recien) {
+        const x = { m, p, pi, e, res, alerta: e.quedan <= 1 || (e.dv != null && e.dv <= 14) };
+        out.paqTodos.push(x); if (x.alerta) out.paquetes.push(x);
+      }
+      if (e.saldo > 0) out.saldos.push({ tipo: "paq", m, p, pi, saldo: e.saldo, t: p.t, f: p.desde, av: p.avisoSaldo });
+    });
+    // saldos de sesiones registradas a mano (las de la agenda se cuentan abajo)
+    (m.historial || []).forEach(h => { const s = (+h.monto || 0) - (+h.pagado || 0); if (s > 0 && !h.compra && !h.citaId) out.saldos.push({ tipo: "his", m, h, saldo: s, t: h.t, f: h.f, av: h.avisoPago }); });
+    // recordatorios del paciente: TODOS, con cualquier fecha
+    (m.rec || []).forEach(r => { const d = diff(r.f); out.recs.push({ m, r, d, grupo: d < 0 ? "vencido" : d <= 7 ? "semana" : "proximo" }); if (d >= -14 && d <= 7) out.controles.push({ m, r }); });
     const ult = (m.historial || []).filter(h => !h.compra).sort((a, b) => b.f.localeCompare(a.f))[0];
     const futura = cs.some(c => c.code === m.code && c.mascotaId === m.id && c.fecha >= hoy && c.estado === "confirmada");
     if (ult && diff(ult.f) <= -30 && !futura && !m.alta) out.inactivos.push({ m, ult });
   });
-  out.porAvisar = out.manana.filter(x => !x.c.recordado).length + out.paquetes.filter(x => !avisadoR(x.p.avisado)).length + out.inactivos.filter(x => !avisadoR(x.m.avisoRetomar)).length + out.controles.filter(x => !avisadoR(x.r.avisado)).length;
+  const porCode = {}; ms.forEach(m => porCode[m.code] = porCode[m.code] || m);
+  cs.filter(c => c.estado === "atendida" && pagoInfo(c).saldo > 0).forEach(c => out.saldos.push({ tipo: "cita", c, m: { id: c.mascotaId, code: c.code, nombre: c.mascota, dueno: c.dueno, celular: c.celular, foto: "" }, saldo: pagoInfo(c).saldo, t: c.servicio, f: c.fecha, av: c.avisoPago }));
+  out.recs.sort((a, b) => a.r.f.localeCompare(b.r.f));
+  out.saldos.sort((a, b) => String(a.f).localeCompare(String(b.f)));
+  out.paqTodos.sort((a, b) => (b.alerta - a.alerta) || (a.e.quedan - b.e.quedan));
+  out.porAvisar = out.manana.filter(x => !x.c.recordado).length + out.paquetes.filter(x => !avisadoR(x.p.avisado)).length + out.inactivos.filter(x => !avisadoR(x.m.avisoRetomar)).length
+    + out.recs.filter(x => x.grupo !== "proximo" && !avisadoR(x.r.avisado)).length + out.saldos.filter(x => !avisadoR(x.av)).length;
   return out;
 }
-const msgSesion = c => `Hola ${String(c.dueno || "").split(" ")[0]}, te saluda *${NOMBRE_V}* 🌿\n\nTe recordamos tu sesión de *mañana*:\n• ${c.servicio}${c.mascota && c.mascota !== c.dueno ? " (" + c.mascota + ")" : ""}\n• ${largo(c.fecha)} a las ${c.hora} h\n• ${c.vet ? "Con " + c.vet + " · " : ""}${c.modalidad || "Presencial"}${/online/i.test(c.modalidad || "") ? (c.enlace ? `\n\n🎥 Enlace de la videollamada:\n${c.enlace}\nConéctate desde un lugar privado y tranquilo.` : "\n\nTe enviaremos el enlace de la videollamada antes de la sesión.") : ""}\n\nPor favor confírmanos tu asistencia respondiendo este mensaje.${c.code ? `\n\nMi Espacio: ${portalLink(c.code)}` : ""}`;
+const msgSesion = c => `Hola ${String(c.dueno || "").split(" ")[0]}, te saluda *${NOMBRE_V}* 🌿\n\nTe recordamos tu sesión de *mañana*:\n• ${c.servicio}${c.mascota && c.mascota !== c.dueno ? " (" + c.mascota + ")" : ""}\n• ${largo(c.fecha)} a las ${c.hora} h\n• ${c.vet ? "Con " + c.vet + " · " : ""}${c.modalidad || "Presencial"}${c.paqueteId ? "\n• Incluida en tu paquete" : ""}${/online/i.test(c.modalidad || "") ? (c.enlace ? `\n\n🎥 Enlace de la videollamada:\n${c.enlace}\nConéctate desde un lugar privado y tranquilo.` : "\n\nTe enviaremos el enlace de la videollamada antes de la sesión.") : ""}\n\nPor favor confírmanos tu asistencia respondiendo este mensaje.${c.code ? `\n\nMi Espacio: ${portalLink(c.code)}` : ""}`;
+const hola = c => `Hola ${String(c.dueno || "").split(" ")[0]}, te saluda *${NOMBRE_V}* 🌿`;
+const msgPaqUso = (p, m, c, code) => { const e = paqEstado(p);
+  return `${hola(c)}\n\nTe recordamos que en tu *${p.t}*${m.nombre !== c.dueno ? " (" + m.nombre + ")" : ""} te ${e.quedan === 1 ? "queda *1 sesión*" : `quedan *${e.quedan} sesiones*`} ya pagadas${p.vence ? `, válidas hasta el *${fmt(p.vence)}*` : ""}.\n\nPuedes reservar tu próxima sesión con tu código y elegir «Usar mi paquete»:\n${webBase()}citas?codigo=${encodeURIComponent(code)}`; };
+const msgSaldo = (x, c) => `${hola(c)}\n\nTe escribimos para recordarte un saldo pendiente:\n• ${x.t}${x.m.nombre && x.m.nombre !== c.dueno ? " (" + x.m.nombre + ")" : ""}\n• Saldo: *${S2(x.saldo)}*\n\nPuedes pagarlo por Yape, Plin, transferencia o en tu próxima sesión. Si ya lo pagaste, avísanos para actualizarlo. ¡Gracias!`;
+const msgRec = (r, m, c, code) => `${hola(c)}\n\nTe recordamos: *${r.t}*${m.nombre !== c.dueno ? " de " + m.nombre : ""} — ${largo(r.f)}.\n\n¿Te separamos una cita? Reserva aquí:\n${webBase()}citas?codigo=${encodeURIComponent(code)}`;
+const msgRetomar = (m, c, code) => `${hola(c)}\n\nHace unas semanas que no nos vemos${m.nombre !== c.dueno ? " con " + m.nombre : ""} y queríamos saber cómo estás.\n\nSi quieres retomar tus sesiones, presenciales u online, aquí puedes elegir día y hora:\n${webBase()}citas?codigo=${encodeURIComponent(code)}\n\nSi prefieres conversar primero, responde este mensaje. Estamos para acompañarte.`;
+
 VIEWS.vacunas = async () => {
   const R = await recordatoriosData(); CUR.R = R;
-  const fila = (m, txt, sub, btn, av) => `<div class="li" data-pet="${esc(m.id)}" data-code="${esc(m.code)}" style="cursor:pointer">${avatarP(m)}<div><b>${esc(m.nombre)} · ${txt}</b><small>${esc(m.dueno)}${m.celular ? " · " + esc(m.celular) : ""} · ${sub}</small></div>
-    ${avisadoR(av) ? `<span class="st ok">Avisado ✓ ${fmtD(av)}</span>` : ""}<button class="btn ${avisadoR(av) ? "btn-light" : "btn-wa"} btn-sm" ${btn}>${ico("wa")}<span class="hide-m">${avisadoR(av) ? "Otra vez" : "Avisar"}</span></button></div>`;
-  $("#view").innerHTML = topBar("Seguimiento", "Recordatorios por WhatsApp con un clic: sesiones de mañana, paquetes por terminar, saldos y pacientes que dejaron de venir.") + `
+  const F = CUR.segF || "todo";
+  const avB = (av, attrs, txt = "Avisar") => `${avisadoR(av) ? `<span class="st ok">Avisado ✓ ${fmtD(av)}</span>` : ""}<button class="btn ${avisadoR(av) ? "btn-light" : "btn-wa"} btn-sm" ${attrs}>${ico("wa")}<span class="hide-m">${avisadoR(av) ? "Otra vez" : txt}</span></button>`;
+  const quien = m => `${esc(m.dueno || "")}${m.celular ? " · " + esc(m.celular) : ""}`;
+  const fila = (m, titulo, sub, derecha, extra = "") => `<div class="li seg-li" ${m.code ? `data-pet="${esc(m.id)}" data-code="${esc(m.code)}"` : ""} data-q="${esc((m.nombre + " " + (m.dueno || "") + " " + (m.code || "") + " " + titulo).toLowerCase())}">${avatarP(m)}<div><b>${titulo}</b><small>${sub}</small>${extra}</div><div class="seg-r">${derecha}</div></div>`;
+  const grupoRec = (g, tit) => { const l = R.recs.filter(x => x.grupo === g); return l.length ? `<div class="seg-g">${tit} <span>${l.length}</span></div>` + l.map(x => fila(x.m, `${esc(x.m.nombre)} · ${esc(x.r.t)}`, `${quien(x.m)} · ${fmt(x.r.f)} · <b class="${x.d < 0 ? "c-red" : ""}">${enDias(x.d)}</b>`, avB(x.r.avisado, `data-rc-rec="${esc(x.r.id)}"`, "Recordar"))).join("") : ""; };
+  const sec = (id, icon, tit, sub, body, n) => `<div class="card seg-sec" data-seg="${id}" ${F !== "todo" && F !== id ? "hidden" : ""}><div class="card-h"><h2>${icon} ${tit} <span class="seg-n">${n}</span></h2><small class="sub">${sub}</small></div><div class="list">${body}</div></div>`;
+  const totSaldo = R.saldos.reduce((a, x) => a + x.saldo, 0);
+  $("#view").innerHTML = topBar("Seguimiento", "Todo lo que hay que recordar a tus pacientes, con WhatsApp en un clic. Lo avisado queda marcado para no repetirlo.") + `
     <div class="stats">
-      <div class="stat"><i>${ico("cal")}</i><div><b>${R.manana.length}</b><span>Sesiones de mañana</span></div></div>
-      <div class="stat"><i>${ico("box")}</i><div><b>${R.paquetes.length}</b><span>Paquetes por terminar</span></div></div>
-      <div class="stat"><i>${ico("history")}</i><div><b>${R.inactivos.length}</b><span>Sin venir +30 días</span></div></div>
+      <div class="stat"><i>${ico("bell")}</i><div><b>${R.recs.length}</b><span>Recordatorios</span></div></div>
+      <div class="stat"><i>${ico("box")}</i><div><b>${R.paqTodos.length}</b><span>Paquetes activos${R.paquetes.length ? ` · <b class="c-red">${R.paquetes.length} por terminar</b>` : ""}</span></div></div>
+      <div class="stat"><i>${ic2("cash")}</i><div><b>${S2(totSaldo)}</b><span>Saldos (${R.saldos.length})</span></div></div>
       <div class="stat hl"><i>${ico("wa")}</i><div><b>${R.porAvisar}</b><span>Por avisar</span></div></div>
     </div>
-    <div class="card"><div class="card-h"><h2>${ico("cal")} Recordar sesiones de mañana</h2></div><div class="list">${R.manana.map((x, i) => `<div class="li">${avatarP({ nombre: x.c.mascota })}<div><b>${esc(x.c.hora)} h · ${esc(x.c.mascota)}</b><small>${esc(x.c.servicio)} · ${esc(x.c.vet || "Sin profesional")} · ${esc(x.c.modalidad || "Presencial")}${/online/i.test(x.c.modalidad || "") && !x.c.enlace ? ` · <b class="c-red">falta enlace</b>` : ""}</small></div>${x.c.recordado ? `<span class="st ok">Avisado ✓</span>` : ""}<button class="btn ${x.c.recordado ? "btn-light" : "btn-wa"} btn-sm" data-rc-man="${i}">${ico("wa")}<span class="hide-m">${x.c.recordado ? "Otra vez" : "Recordar"}</span></button></div>`).join("") || `<p class="empty">No hay sesiones mañana.</p>`}</div></div>
-    <div class="card"><div class="card-h"><h2>${ico("box")} Paquetes por terminar o vencer</h2></div><div class="list">${R.paquetes.map(x => fila(x.m, esc(x.p.t), `${x.e.quedan ? `quedan ${x.e.quedan}` : "sin sesiones"}${x.p.vence ? " · vence " + fmtD(x.p.vence) : ""}`, `data-rc-paq="${x.pi}"`, x.p.avisado)).join("") || `<p class="empty">Ningún paquete por terminar.</p>`}</div></div>
-    <div class="card"><div class="card-h"><h2>${ic2("cash")} Saldos de paquetes</h2></div><div class="list">${R.saldos.map(x => `<div class="li" data-pet="${esc(x.m.id)}" data-code="${esc(x.m.code)}" style="cursor:pointer">${avatarP(x.m)}<div><b>${esc(x.m.nombre)} · ${esc(x.p.t)}</b><small>${esc(x.m.dueno)} · pagado ${S2(x.p.pagado)} de ${S2(x.p.precio)}</small></div><span class="st warn">Saldo ${S2(x.e.saldo)}</span></div>`).join("") || `<p class="empty">Sin saldos pendientes.</p>`}</div></div>
-    <div class="card"><div class="card-h"><h2>${ico("history")} Dejaron de venir (+30 días sin sesión ni cita)</h2></div><div class="list">${R.inactivos.map(x => fila(x.m, "retomar terapia", `última sesión ${fmt(x.ult.f)} (${enDias(diff(x.ult.f))})`, `data-rc-ret="1"`, x.m.avisoRetomar)).join("") || `<p class="empty">Todos tienen continuidad. 🎉</p>`}</div></div>
-    <div class="card"><div class="card-h"><h2>${ico("bell")} Controles y recordatorios</h2></div><div class="list">${R.controles.map(x => fila(x.m, esc(x.r.t), `${fmtD(x.r.f)} · ${enDias(diff(x.r.f))}`, `data-rc-rec="${esc(x.r.id)}"`, x.r.avisado)).join("") || `<p class="empty">Nada para esta semana.</p>`}</div></div>`;
+    <div class="card seg-bar">
+      <label class="search">${ico("search")}<input id="segQ" type="search" placeholder="Buscar paciente, código o servicio" value="${esc(CUR.segQ || "")}"></label>
+      <div class="chips">${[["todo", "Todo"], ["manana", `Mañana (${R.manana.length})`], ["recs", `Recordatorios (${R.recs.length})`], ["paq", `Paquetes (${R.paqTodos.length})`], ["saldos", `Saldos (${R.saldos.length})`], ["ret", `Retomar (${R.inactivos.length})`]].map(([k, t]) => `<button class="chip ${F === k ? "on" : ""}" data-segf="${k}">${t}</button>`).join("")}</div>
+    </div>
+    ${sec("manana", ico("cal"), "Sesiones de mañana", "Recuérdales la hora y, si es online, el enlace.", R.manana.map((x, i) => fila({ nombre: x.c.mascota, dueno: x.c.dueno, celular: x.c.celular }, `${esc(x.c.hora)} h · ${esc(x.c.mascota)}`, `${esc(x.c.servicio)} · ${esc(x.c.vet || "Sin profesional")} · ${esc(x.c.modalidad || "Presencial")}${x.c.paqueteId ? " · Paquete" : ""}${/online/i.test(x.c.modalidad || "") && !x.c.enlace ? ` · <b class="c-red">falta enlace</b>` : ""}`,
+      `${x.c.recordado ? `<span class="st ok">Avisado ✓</span>` : ""}<button class="btn ${x.c.recordado ? "btn-light" : "btn-wa"} btn-sm" data-rc-man="${i}">${ico("wa")}<span class="hide-m">${x.c.recordado ? "Otra vez" : "Recordar"}</span></button>`)).join("") || `<p class="empty">No hay sesiones mañana.</p>`, R.manana.length)}
+    ${sec("recs", ico("bell"), "Recordatorios", "Todos los recordatorios que creaste en las fichas de tus pacientes.", (grupoRec("vencido", "Vencidos") + grupoRec("semana", "Esta semana") + grupoRec("proximo", "Próximos")) || `<p class="empty">Aún no hay recordatorios. Créalos en la ficha del paciente → «Recordatorio».</p>`, R.recs.length)}
+    ${sec("paq", ico("box"), "Paquetes de sesiones", "Sesiones pagadas que les quedan. Recuérdales usarlas o, si se acaban, ofréceles renovar.", R.paqTodos.map(x => fila(x.m, `${esc(x.m.nombre)} · ${esc(x.p.t)}`, `${quien(x.m)}${x.p.vence ? " · vence " + fmt(x.p.vence) : ""}${x.res ? ` · ${x.res} reservada${x.res > 1 ? "s" : ""}` : ""}`,
+      `<span class="st ${x.e.quedan === 0 ? "bad" : x.alerta ? "warn" : "info"}">${x.e.quedan === 0 ? "Sin sesiones" : `Quedan ${x.e.quedan} de ${x.e.ses}`}</span>${x.e.saldo ? `<span class="st warn">Saldo ${S2(x.e.saldo)}</span>` : ""}${avB(x.p.avisado, `data-rc-paq="${x.pi}"`, x.alerta ? "Renovar" : "Recordar")}`,
+      `<div class="paq-dots sm">${Array.from({ length: x.e.ses }, (_, k) => `<i class="${k < x.e.us ? "on" : k < x.e.us + x.res ? "res" : ""}"></i>`).join("")}</div>`)).join("") || `<p class="empty">No hay paquetes activos.</p>`, R.paqTodos.length)}
+    ${sec("saldos", ic2("cash"), "Saldos por cobrar", `Total: <b>${S2(totSaldo)}</b>`, R.saldos.map((x, i) => fila(x.m, `${esc(x.m.nombre || "")} · ${esc(x.t)}`, `${quien(x.m)} · ${x.tipo === "paq" ? "paquete del " : "sesión del "}${fmt(x.f)}`, `<span class="st warn">${S2(x.saldo)}</span>${avB(x.av, `data-rc-sal="${i}"`, "Recordar pago")}`)).join("") || `<p class="empty">Nadie debe nada. 🎉</p>`, R.saldos.length)}
+    ${sec("ret", ico("history"), "Dejaron de venir", "Más de 30 días sin sesión y sin cita reservada.", R.inactivos.map(x => fila(x.m, `${esc(x.m.nombre)} · retomar terapia`, `${quien(x.m)} · última sesión ${fmt(x.ult.f)} (${enDias(diff(x.ult.f))})`, avB(x.m.avisoRetomar, `data-rc-ret="1"`, "Retomar"))).join("") || `<p class="empty">Todos tienen continuidad. 🎉</p>`, R.inactivos.length)}`;
+  const filtrar = () => { const q = $("#segQ").value.trim().toLowerCase(); CUR.segQ = q; $$(".seg-li").forEach(li => li.style.display = !q || li.dataset.q.includes(q) ? "" : "none"); };
+  $("#segQ").addEventListener("input", filtrar); filtrar();
 };
 
 /* ---------- Clics ---------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t || !$("#view").contains(t)) return;
+  if (t.dataset.segf) { CUR.segF = t.dataset.segf; $$("[data-segf]").forEach(b => b.classList.toggle("on", b === t)); $$(".seg-sec").forEach(s => s.hidden = CUR.segF !== "todo" && s.dataset.seg !== CUR.segF); return; }
   if (t.dataset.rcMan != null) { const c = CUR.R.manana[+t.dataset.rcMan].c; openWA(c.celular, msgSesion(c)); await DB.guardarCita(c.id, { recordado: todayISO() }); toast("Recordatorio enviado"); return refresh(); }
+  if (t.dataset.rcSal != null) {
+    e.stopPropagation();
+    const x = CUR.R.saldos[+t.dataset.rcSal], hoy = todayISO();
+    if (x.tipo === "cita") { openWA(x.c.celular, msgSaldo(x, { dueno: x.c.dueno })); await DB.guardarCita(x.c.id, { avisoPago: hoy }); }
+    else { const [c, m] = await Promise.all([DB.getCliente(x.m.code), DB.getMascota(x.m.code, x.m.id)]); openWA(c.celular, msgSaldo(x, c));
+      if (x.tipo === "paq") { const p = (m.paquetes || [])[x.pi]; if (p) { p.avisoSaldo = hoy; await DB.saveMascota(x.m.code, x.m.id, { paquetes: m.paquetes }); } }
+      else { const h = (m.historial || []).find(z => z.id === x.h.id); if (h) { h.avisoPago = hoy; await DB.saveMascota(x.m.code, x.m.id, { historial: m.historial }); } } }
+    toast("Recordatorio de pago enviado"); return refresh();
+  }
   if (t.matches("[data-rc-paq], [data-rc-rec], [data-rc-ret]")) {
     e.stopPropagation();
     const row = t.closest("[data-pet]"), code = row.dataset.code, id = row.dataset.pet, [c, m] = await Promise.all([DB.getCliente(code), DB.getMascota(code, id)]);
-    if (t.dataset.rcPaq != null) { const p = m.paquetes[+t.dataset.rcPaq]; openWA(c.celular, msgRenovar(p, m, c, code)); p.avisado = todayISO(); await DB.saveMascota(code, id, { paquetes: m.paquetes }); }
-    if (t.dataset.rcRec) { const r = (m.rec || []).find(x => x.id === t.dataset.rcRec); openWA(c.celular, `Hola ${String(c.dueno).split(" ")[0]}, te saluda *${NOMBRE_V}* 🌿\n\nTe recordamos: *${r.t}*${m.nombre !== c.dueno ? " de " + m.nombre : ""} el ${largo(r.f)}.\n\n¿Te separamos una cita? Reserva aquí:\n${webBase()}citas?codigo=${encodeURIComponent(code)}`); r.avisado = todayISO(); await DB.saveMascota(code, id, { rec: m.rec }); }
-    if (t.dataset.rcRet) { openWA(c.celular, `Hola ${String(c.dueno).split(" ")[0]}, te saluda *${NOMBRE_V}* 🌿\n\nHace unas semanas que no nos vemos${m.nombre !== c.dueno ? " con " + m.nombre : ""} y queríamos saber cómo estás.\n\nSi quieres retomar tus sesiones, presenciales u online, aquí puedes elegir día y hora:\n${webBase()}citas?codigo=${encodeURIComponent(code)}\n\nSi prefieres conversar primero, responde este mensaje. Estamos para acompañarte.`); await DB.saveMascota(code, id, { avisoRetomar: todayISO() }); }
+    if (t.dataset.rcPaq != null) { const p = m.paquetes[+t.dataset.rcPaq], e2 = paqEstado(p); openWA(c.celular, e2.quedan <= 1 || (e2.dv != null && e2.dv <= 14) ? msgRenovar(p, m, c, code) : msgPaqUso(p, m, c, code)); p.avisado = todayISO(); await DB.saveMascota(code, id, { paquetes: m.paquetes }); }
+    if (t.dataset.rcRec) { const r = (m.rec || []).find(x => x.id === t.dataset.rcRec); openWA(c.celular, msgRec(r, m, c, code)); r.avisado = todayISO(); await DB.saveMascota(code, id, { rec: m.rec }); }
+    if (t.dataset.rcRet) { openWA(c.celular, msgRetomar(m, c, code)); await DB.saveMascota(code, id, { avisoRetomar: todayISO() }); }
     toast("Marcado como avisado"); return refresh();
   }
   if (CUR.v !== "mascota") return;

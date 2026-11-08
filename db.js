@@ -24,7 +24,7 @@
       "MS-1024": { codigo: "MS-1024", dueno: "Lucía Fernández", celular: "987654321", email: "lucia@correo.com", direccion: "Miraflores", contacto: "Pedro Fernández (hermano) · 912 333 444", notas: "Prefiere sesiones online por la noche", creado: now(), mascotas: {
         lucia: P({ nombre: "Lucía Fernández", sexo: "Femenino", nac: iso(-31 * 365), dni: "47851236", alergias: "Ninguna", medicamentos: "Sertralina 50 mg",
           profesional: "Ps. Camila Ortega", profId: "camila", psiquiatra: "Dra. Valeria Montes", modalidad: "Online", consentimiento: iso(-44),
-          paquetes: [{ id: "pq1", t: "Paquete de 8 sesiones · Terapia individual", ses: 8, usadas: 5, precio: 760, pagado: 760, desde: iso(-36), vence: iso(84) }],
+          paquetes: [{ id: "pq1", t: "Paquete de 8 sesiones · Terapia individual", ses: 8, usadas: 5, precio: 760, pagado: 760, desde: iso(-36), vence: iso(84), servicio: "terapia-individual" }],
           tareas: [{ id: "t1", t: "Registro de pensamientos", d: "Anota 3 situaciones de la semana: qué pasó, qué pensaste y qué sentiste (0 a 10).", f: iso(-5) },
                    { id: "t2", t: "Respiración diafragmática", d: "5 minutos, 2 veces al día. Usa el audio que te enviamos por WhatsApp.", f: iso(-5) },
                    { id: "t3", t: "Caminar 20 minutos", d: "3 veces por semana, de preferencia de día.", f: iso(-12) }],
@@ -37,20 +37,22 @@
               meds: [{ n: "Sertralina 50 mg", dosis: "½ tableta la primera semana, luego 1 tableta", cada: "24 h (en la mañana), hasta el próximo control", dias: "" }],
               ind: "Tomar después del desayuno. Puede haber náuseas leves los primeros días. No suspender sin consultar. Continuar con la terapia semanal.", control: iso(16), controlMotivo: "Control psiquiátrico" },
             ses(-44, "19:00", "Primera consulta de orientación", "Ps. Camila Ortega", "Online", { monto: 60, pagado: 60, pagos: [{ monto: 60, metodo: "Plin", fecha: iso(-44) }] })],
-          rec: [{ id: uid(), i: "pill", t: "Control psiquiátrico", f: iso(16) }] }) } },
+          rec: [{ id: uid(), i: "pill", t: "Control psiquiátrico", f: iso(16) }, { id: uid(), i: "task", t: "Repetir cuestionario de ansiedad", f: iso(3) }, { id: uid(), i: "cal", t: "Revisión de objetivos de la terapia", f: iso(35) }] }) } },
       "MS-2048": { codigo: "MS-2048", dueno: "Carmen Ramos", celular: "945678123", email: "", direccion: "Surco", contacto: "", notas: "Familia: terapia infantil de Joaquín + orientación a padres", creado: now(), mascotas: {
         joaquin: P({ nombre: "Joaquín Ramos", sexo: "Masculino", nac: iso(-10 * 365 - 90), dni: "", alergias: "Ninguna", menor: true, apoderado: "Carmen Ramos (mamá)",
           profesional: "Ps. Mariana Ríos", profId: "mariana", psiquiatra: "", modalidad: "Presencial", consentimiento: iso(-14),
-          paquetes: [{ id: "pq2", t: "Paquete de 4 sesiones · Terapia infantil", ses: 4, usadas: 2, precio: 400, pagado: 200, desde: iso(-14), vence: iso(46) }],
+          paquetes: [{ id: "pq2", t: "Paquete de 4 sesiones · Terapia infantil", ses: 4, usadas: 2, precio: 400, pagado: 200, desde: iso(-14), vence: iso(46), servicio: "terapia-infantil" }],
           tareas: [{ id: "t4", t: "Termómetro de emociones", d: "Antes de dormir, Joaquín marca cómo se sintió en el día (para los padres: acompañen sin corregir).", f: iso(-3) }],
           historial: [ses(-3, "16:00", "Terapia infantil · sesión 2", "Ps. Mariana Ríos", "Presencial", { paquete: true }),
             ses(-10, "16:00", "Terapia infantil · sesión 1 (con los padres)", "Ps. Mariana Ríos", "Presencial", { paquete: true, ind: "Mantener horarios de sueño fijos. Elogiar el esfuerzo, no solo el resultado. Evitar pantallas una hora antes de dormir." }),
             { id: uid(), f: iso(-14), hora: "16:00", t: "Paquete de 4 sesiones · Terapia infantil", vet: "", monto: 400, pagado: 200, pagos: [{ monto: 200, metodo: "Efectivo", fecha: iso(-14) }], compra: true }] }),
         carmen: P({ nombre: "Carmen Ramos", sexo: "Femenino", nac: iso(-41 * 365), dni: "41236587", alergias: "Ninguna", profesional: "Ps. Andrés Villanueva", profId: "andres", modalidad: "Online",
-          historial: [ses(-7, "20:00", "Orientación a padres", "Ps. Andrés Villanueva", "Online", { monto: 110, pagado: 110, pagos: [{ monto: 110, metodo: "Transferencia", fecha: iso(-7) }] })] }) } },
+          historial: [ses(-7, "20:00", "Orientación a padres", "Ps. Andrés Villanueva", "Online", { monto: 110, pagado: 110, pagos: [{ monto: 110, metodo: "Transferencia", fecha: iso(-7) }] }),
+            ses(-21, "20:00", "Orientación a padres", "Ps. Andrés Villanueva", "Online", { monto: 110, pagado: 50, pagos: [{ monto: 50, metodo: "Yape", fecha: iso(-21) }] })],
+          rec: [{ id: uid(), i: "kid", t: "Reunión con la tutora del colegio de Joaquín", f: iso(-2) }] }) } },
       "MS-3072": { codigo: "MS-3072", dueno: "Jorge Mendoza", celular: "956123789", email: "", direccion: "Arequipa", contacto: "", notas: "Atención 100% online", creado: now(), mascotas: {
         jorge: P({ nombre: "Jorge Mendoza", sexo: "Masculino", nac: iso(-38 * 365), dni: "29541236", alergias: "Ninguna", profesional: "Ps. Camila Ortega", profId: "camila", modalidad: "Online", consentimiento: iso(-70),
-          paquetes: [{ id: "pq3", t: "Paquete de 8 sesiones · Terapia individual", ses: 8, usadas: 7, precio: 760, pagado: 760, desde: iso(-60), vence: iso(60) }],
+          paquetes: [{ id: "pq3", t: "Paquete de 8 sesiones · Terapia individual", ses: 8, usadas: 7, precio: 760, pagado: 760, desde: iso(-60), vence: iso(60), servicio: "terapia-individual" }],
           historial: [1, 2, 3, 4, 5, 6, 7].map(k => ses(-7 * (8 - k), "10:00", `Terapia individual · sesión ${k}`, "Ps. Camila Ortega", "Online", { paquete: true })),
           escalas: [{ id: "gad7", n: "Ansiedad (GAD-7)", max: 21, v: [{ f: iso(-49), p: 14 }, { f: iso(-21), p: 9 }, { f: iso(-7), p: 6 }] }] }) } },
       "MS-4096": { codigo: "MS-4096", dueno: "Rosa Huamán", celular: "934567812", email: "", direccion: "Lince", contacto: "", notas: "", creado: now(), mascotas: {
@@ -63,6 +65,21 @@
       n3: { code: "MS-1024", mid: "lucia", autor: "valeria@menteserena.pe", autorNombre: "Dra. Valeria Montes", f: iso(-42), hora: "17:00", motivo: "Trastorno de ansiedad generalizada con síntomas depresivos leves.", trabajo: "Evaluación psiquiátrica completa. Sin riesgo actual.", plan: "Inicio de ISRS a dosis baja. Control en 8 semanas. Coordinar con su psicóloga.", creado: now() },
       n4: { code: "MS-2048", mid: "joaquin", autor: "mariana@menteserena.pe", autorNombre: "Ps. Mariana Ríos", f: iso(-3), hora: "16:00", motivo: "Ansiedad al ir al colegio los lunes.", trabajo: "Juego con títeres sobre el colegio. Identifica el miedo como «un nudo en la panza».", plan: "Coordinar con tutora. Cartilla de rutina matutina.", creado: now() },
     } };
+  }
+  // Retos y registro diario de ejemplo (Mi día)
+  function seedBien(d) {
+    const L = d.clientes["MS-1024"], J = d.clientes["MS-3072"];
+    if (L && L.mascotas.lucia && !L.mascotas.lucia.retos) L.mascotas.lucia.retos = [
+      { id: "r1", t: "Respiración 4-7-8 al despertar", d: "4 ciclos, sentada en la cama", ej: "respiracion478", activo: true, desde: iso(-20) },
+      { id: "r2", t: "Escribe 3 cosas buenas del día", d: "", ej: "gratitud", activo: true, desde: iso(-20) },
+      { id: "r3", t: "Caminar 20 minutos", d: "De preferencia con luz de día", ej: "", activo: true, desde: iso(-20) }];
+    if (J && J.mascotas.jorge && !J.mascotas.jorge.retos) J.mascotas.jorge.retos = [{ id: "r4", t: "Registro de pensamientos cuando sientas ansiedad", d: "", ej: "pensamientos", activo: true, desde: iso(-10) }];
+    if (L && !L.registro) { L.registro = {}; const an = [3, 2, 3, 3, 2, 3, 3, 4, 3, 3, 4, 4, 3, 4, 4, 4, 5, 4, 4, 4];
+      an.forEach((a, i) => { const f = iso(i - an.length), done = (i * 7) % 3 !== 0;
+        L.registro[`${f}_lucia`] = { mid: "lucia", fecha: f, animo: a, retos: done ? { r1: true, ...(i % 2 ? { r2: true } : {}), ...(i % 3 === 1 ? { r3: true } : {}) } : {}, ejercicios: done ? [{ k: "respiracion478", min: 2, hora: "08:10" }] : [],
+          ...(i % 4 === 0 ? { gratitud: ["Un café tranquilo", "Hablé con mi hermano", "Terminé un pendiente"] } : {}), ...(i === 4 ? { nota: "Día difícil en el trabajo, me costó dormir." } : {}), ...(i === 16 ? { nota: "¡Hice la presentación y salió bien!" } : {}) }; }); }
+    if (J && !J.registro) { J.registro = {};
+      [[-6, 3], [-5, 3], [-4, 2], [-3, 3], [-2, 2], [-1, 1]].forEach(([n, a]) => { const f = iso(n); J.registro[`${f}_jorge`] = { mid: "jorge", fecha: f, animo: a, retos: {}, ejercicios: [], ...(n === -1 ? { nota: "Me siento muy agotado, sin ganas de nada.", pensamientos: [{ s: "Me llamaron la atención en el trabajo", p: "No sirvo para nada", e: "Tristeza", i: 8, a: "Fue un error puntual, el resto del año me fue bien", i2: 6, hora: "22:15" }] } : {}) }; }); }
   }
   // Citas y caja de ejemplo para el MODO DEMO
   function seedAgenda(d) {
@@ -118,6 +135,7 @@
     if (!d.web && X.web) { d.web = JSON.parse(JSON.stringify(X.web)); ch = true; }
     if (!d.citas) { seedAgenda(d); ch = true; }
     if (!d.notas) { d.notas = {}; ch = true; }
+    if (!d._bien) { seedBien(d); d._bien = 1; ch = true; }
     if (ch) save(d); return d;
   }
   const load = () => { try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.clientes) return ensure(d); } catch (e) {} const d = seed(); save(d); return ensure(d); };
@@ -392,6 +410,8 @@
       id = id || uid() + uid(); d.notas[id] = { ...(d.notas[id] || { creado: now() }), ...data, autor: me, actualizado: now() }; save(d); return id; },
     async delNota(id) { const d = load(); if (d.notas[id] && d.notas[id].autor === yo()) delete d.notas[id]; save(d); },
     async getConsent(code, mid) { const x = (load().consentimientos || {})[code + "_" + mid]; return x ? clone(x) : null; },
+    async listRegistro(code, mid) { const c = load().clientes[code]; return Object.values((c && c.registro) || {}).filter(r => r.mid === mid).map(clone).sort((a, b) => a.fecha.localeCompare(b.fecha)); },
+    async registroDesde(desde) { const out = []; for (const [code, c] of Object.entries(load().clientes)) for (const r of Object.values(c.registro || {})) if (r.fecha >= desde) out.push({ ...clone(r), code }); return out; },
     async saveConsent(code, mid, data) { const d = load(); d.consentimientos = d.consentimientos || {}; d.consentimientos[code + "_" + mid] = { ...data, code, mid, creado: now() }; save(d); },
   });
   Object.assign(firebase, {
@@ -404,6 +424,12 @@
       await f.setDoc(f.doc(f.db, "notas", id), { ...data, autor: me, actualizado: now() }, { merge: true }); return id; },
     async delNota(id) { const f = await F(); await f.deleteDoc(f.doc(f.db, "notas", id)); },
     async getConsent(code, mid) { return this.getDocX("consentimientos", code + "_" + mid); },
+    async listRegistro(code, mid) { const f = await F(); const s = await f.getDocs(f.collection(f.db, "clientes", code, "registro"));
+      return s.docs.map(d => d.data()).filter(r => r.mid === mid).sort((a, b) => a.fecha.localeCompare(b.fecha)); },
+    async registroDesde(desde) { const f = await F(); let s;
+      try { s = await f.getDocs(f.query(f.collectionGroup(f.db, "registro"), f.where("fecha", ">=", desde))); }
+      catch (e) { console.warn("Índice de «registro» no creado aún; se leen todos.", e.message); s = await f.getDocs(f.collectionGroup(f.db, "registro")); }
+      return s.docs.map(d => ({ ...d.data(), code: d.ref.parent.parent.id })).filter(r => r.fecha >= desde); },
     async saveConsent(code, mid, data) { const f = await F(); await f.setDoc(f.doc(f.db, "consentimientos", code + "_" + mid), { ...data, code, mid, creado: now() }); },
   });
 
