@@ -81,6 +81,34 @@
     if (J && !J.registro) { J.registro = {};
       [[-6, 3], [-5, 3], [-4, 2], [-3, 3], [-2, 2], [-1, 1]].forEach(([n, a]) => { const f = iso(n); J.registro[`${f}_jorge`] = { mid: "jorge", fecha: f, animo: a, retos: {}, ejercicios: [], ...(n === -1 ? { nota: "Me siento muy agotado, sin ganas de nada.", pensamientos: [{ s: "Me llamaron la atención en el trabajo", p: "No sirvo para nada", e: "Tristeza", i: 8, a: "Fue un error puntual, el resto del año me fue bien", i2: 6, hora: "22:15" }] } : {}) }; }); }
   }
+  // Captura de ejemplo (dibujada) para los pagos web del MODO DEMO
+  function capturaDemo(monto, op, metodo) {
+    try {
+      const c = document.createElement("canvas"); c.width = 360; c.height = 640; const g = c.getContext("2d"), yape = metodo === "Yape";
+      g.fillStyle = yape ? "#742284" : "#0b6fae"; g.fillRect(0, 0, 360, 640);
+      g.fillStyle = "#fff"; g.beginPath(); g.roundRect ? g.roundRect(24, 120, 312, 420, 22) : g.rect(24, 120, 312, 420); g.fill();
+      g.fillStyle = "#fff"; g.font = "bold 26px Arial"; g.textAlign = "center"; g.fillText(yape ? "yape" : "plin", 180, 70);
+      g.fillStyle = "#222"; g.font = "bold 24px Arial"; g.fillText(yape ? "¡Yapeaste!" : "¡Pago exitoso!", 180, 175);
+      g.font = "bold 50px Arial"; g.fillText("S/ " + monto, 180, 250);
+      g.font = "18px Arial"; g.fillStyle = "#555"; g.fillText("Mente Serena SAC", 180, 295);
+      const d = new Date(), M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"];
+      g.fillText(`${String(d.getDate()).padStart(2, "0")} ${M[d.getMonth()]}. ${d.getFullYear()} - 10:42 a. m.`, 180, 330);
+      g.font = "16px Arial"; g.fillText("Nro. de operación", 180, 400); g.font = "bold 22px Arial"; g.fillStyle = "#222"; g.fillText(op, 180, 430);
+      return c.toDataURL("image/jpeg", .8);
+    } catch (e) { return ""; }
+  }
+  function seedPagos(d) {
+    d.pagos_web = d.pagos_web || {};
+    Object.entries(d.citas || {}).forEach(([id, c]) => {
+      if (c.fecha !== iso(0) || c.estado !== "confirmada") return;
+      if (c.mascota === "Andrea Torres") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Yape", adelantoEstado: "por-validar" });
+        d.pagos_web[id] = { citaId: id, code: "", mascota: c.mascota, dueno: c.dueno, celular: c.celular, servicio: c.servicio, fecha: c.fecha, hora: c.hora, precio: c.precio, monto: 50, metodo: "Yape", operacion: "48213977",
+          captura: capturaDemo("30", "48213977", "Yape"), montoLeido: 30, montosLeidos: [30], coincide: false, fechaOk: true, estado: "por-validar", creado: now() }; }
+      if (c.mascota === "Martín Salas") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Plin", adelantoEstado: "por-validar" });
+        d.pagos_web[id] = { citaId: id, code: "", mascota: c.mascota, dueno: c.dueno, celular: c.celular, servicio: c.servicio, fecha: c.fecha, hora: c.hora, precio: c.precio, monto: 50, metodo: "Plin", operacion: "90311452",
+          captura: capturaDemo("50.00", "90311452", "Plin"), montoLeido: 50, montosLeidos: [50], coincide: true, fechaOk: true, estado: "por-validar", creado: now() }; }
+    });
+  }
   // Citas y caja de ejemplo para el MODO DEMO
   function seedAgenda(d) {
     d.citas = {}; d.turnos = {}; d.movimientos = d.movimientos || {};
@@ -136,6 +164,7 @@
     if (!d.citas) { seedAgenda(d); ch = true; }
     if (!d.notas) { d.notas = {}; ch = true; }
     if (!d._bien) { seedBien(d); d._bien = 1; ch = true; }
+    if (!d._pagos) { seedPagos(d); d._pagos = 1; ch = true; }
     if (ch) save(d); return d;
   }
   const load = () => { try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.clientes) return ensure(d); } catch (e) {} const d = seed(); save(d); return ensure(d); };
@@ -259,6 +288,7 @@
   const pubCita = c => ({ fecha: c.fecha, hora: c.hora, servicio: c.servicio, precio: +c.precio || 0, total: +(c.total ?? c.precio) || 0, pagado: +c.pagado || 0,
     estadoPago: c.estadoPago || "pendiente", mascota: c.mascota || "", mascotaId: c.mascotaId || "", estado: c.estado || "confirmada", vet: c.vet || "", sede: c.sede || "",
     modalidad: c.modalidad || "Presencial", enlace: c.enlace || "", paqueteId: c.paqueteId || "",
+    adelantoPend: +c.adelantoPend || 0, adelantoEstado: c.adelantoEstado || "",
     cargos: (c.cargos || []).map(x => ({ n: x.n, q: +x.q || 1, p: +x.p || 0 })), ...(c.precioBase != null ? { precioBase: +c.precioBase } : {}),
     pagos: (c.pagos || []).map(p => ({ monto: +p.monto || 0, metodo: p.metodo || "", fecha: p.fecha || "", hora: p.hora || "" })) });
   Object.assign(demo, {
@@ -410,6 +440,8 @@
       id = id || uid() + uid(); d.notas[id] = { ...(d.notas[id] || { creado: now() }), ...data, autor: me, actualizado: now() }; save(d); return id; },
     async delNota(id) { const d = load(); if (d.notas[id] && d.notas[id].autor === yo()) delete d.notas[id]; save(d); },
     async getConsent(code, mid) { const x = (load().consentimientos || {})[code + "_" + mid]; return x ? clone(x) : null; },
+    async listPagosWeb() { return Object.entries(load().pagos_web || {}).map(([id, x]) => ({ ...clone(x), id })).sort((a, b) => (b.creado || "").localeCompare(a.creado || "")); },
+    async savePagoWeb(id, patch) { const d = load(); d.pagos_web = d.pagos_web || {}; d.pagos_web[id] = { ...(d.pagos_web[id] || {}), ...patch }; save(d); },
     async listRegistro(code, mid) { const c = load().clientes[code]; return Object.values((c && c.registro) || {}).filter(r => r.mid === mid).map(clone).sort((a, b) => a.fecha.localeCompare(b.fecha)); },
     async registroDesde(desde) { const out = []; for (const [code, c] of Object.entries(load().clientes)) for (const r of Object.values(c.registro || {})) if (r.fecha >= desde) out.push({ ...clone(r), code }); return out; },
     async saveConsent(code, mid, data) { const d = load(); d.consentimientos = d.consentimientos || {}; d.consentimientos[code + "_" + mid] = { ...data, code, mid, creado: now() }; save(d); },
@@ -424,6 +456,9 @@
       await f.setDoc(f.doc(f.db, "notas", id), { ...data, autor: me, actualizado: now() }, { merge: true }); return id; },
     async delNota(id) { const f = await F(); await f.deleteDoc(f.doc(f.db, "notas", id)); },
     async getConsent(code, mid) { return this.getDocX("consentimientos", code + "_" + mid); },
+    async listPagosWeb() { const f = await F(); const s = await f.getDocs(f.collection(f.db, "pagos_web"));
+      return s.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => (b.creado || "").localeCompare(a.creado || "")); },
+    async savePagoWeb(id, patch) { const f = await F(); await f.setDoc(f.doc(f.db, "pagos_web", id), patch, { merge: true }); },
     async listRegistro(code, mid) { const f = await F(); const s = await f.getDocs(f.collection(f.db, "clientes", code, "registro"));
       return s.docs.map(d => d.data()).filter(r => r.mid === mid).sort((a, b) => a.fecha.localeCompare(b.fecha)); },
     async registroDesde(desde) { const f = await F(); let s;

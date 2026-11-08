@@ -70,7 +70,7 @@ service cloud.firestore {
         allow read: if true;
         allow create: if esAdmin() || (
           existsAfter(/databases/$(database)/documents/citas/$(cita))
-          && request.resource.data.keys().hasOnly(['fecha', 'hora', 'servicio', 'precio', 'modalidad', 'mascota', 'mascotaId', 'total', 'pagado', 'estadoPago', 'estado', 'creado', 'paqueteId'])
+          && request.resource.data.keys().hasOnly(['fecha', 'hora', 'servicio', 'precio', 'modalidad', 'mascota', 'mascotaId', 'total', 'pagado', 'estadoPago', 'estado', 'creado', 'paqueteId', 'adelantoPend', 'adelantoEstado'])
           && request.resource.data.pagado == 0 && request.resource.data.estado == 'confirmada');
         allow update, delete: if esAdmin();
       }
@@ -104,8 +104,24 @@ service cloud.firestore {
         && texto(request.resource.data.mascota, 60) && texto(request.resource.data.motivo, 300)
         && request.resource.data.modalidad in ['Presencial', 'Online']
         && request.resource.data.keys().hasOnly(['fecha', 'hora', 'k', 'servicioId', 'servicio', 'precio', 'modalidad', 'area', 'code', 'mascotaId', 'mascota',
-             'edad', 'preferencia', 'dueno', 'celular', 'motivo', 'origen', 'estado', 'pagado', 'estadoPago', 'creado', 'paqueteId']));
+             'edad', 'preferencia', 'dueno', 'celular', 'motivo', 'origen', 'estado', 'pagado', 'estadoPago', 'creado', 'paqueteId',
+             'adelantoPend', 'adelantoMetodo', 'adelantoEstado'])
+        && (!('adelantoEstado' in request.resource.data) || request.resource.data.adelantoEstado == 'por-validar'));
       // Si la reserva usa un paquete (precio 0), recepción lo verifica: el panel solo descuenta de paquetes reales del paciente.
+      allow read, update, delete: if esAdmin();
+    }
+
+    // ---------- Adelantos con Yape / Plin (la web los crea, solo el equipo los ve) ----------
+    match /pagos_web/{id} {
+      allow create: if esAdmin() || (
+        existsAfter(/databases/$(database)/documents/citas/$(id))
+        && request.resource.data.citaId == id
+        && request.resource.data.estado == 'por-validar'
+        && request.resource.data.monto is number && request.resource.data.monto > 0 && request.resource.data.monto <= 5000
+        && request.resource.data.metodo in ['Yape', 'Plin']
+        && request.resource.data.captura is string && request.resource.data.captura.size() < 900000
+        && request.resource.data.keys().hasOnly(['citaId', 'code', 'mascota', 'dueno', 'celular', 'servicio', 'fecha', 'hora', 'precio', 'monto', 'metodo',
+             'operacion', 'captura', 'montoLeido', 'montosLeidos', 'coincide', 'fechaOk', 'estado', 'creado']));
       allow read, update, delete: if esAdmin();
     }
 

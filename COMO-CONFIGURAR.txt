@@ -56,3 +56,13 @@ QUÉ HACE CADA PARTE
 Nota: el apiKey de Firebase NO es secreto. La seguridad la dan las reglas y los usuarios.
 Recuerda: los menús que se ocultan por rol son comodidad; la protección real de las
 notas clínicas está en las reglas de Firestore (paso 4).
+
+8. ADELANTOS CON YAPE Y PLIN
+   - Ajustes → «Pagos y adelantos (web)»: sube la captura de tu «Mi QR» de Yape y de Plin,
+     pon el número y el titular, y el monto del adelanto (por defecto S/ 50, o un %).
+   - El paciente elige al reservar: «Adelantar ahora» (escanea el QR, escribe el monto y sube
+     su captura) o «Pagar en el consultorio». La web lee la captura y avisa si el monto no coincide.
+   - En el panel → «Pagos web» verás cada adelanto con su captura. Revisa tu app de Yape/Plin
+     y pulsa «Validar pago»: se registra en Caja y en la cita, y avisas al paciente por WhatsApp.
+     Si no llegó, «Rechazar» (la cita sigue reservada).
+   - IMPORTANTE: vuelve a publicar firestore.rules (tiene la regla nueva de pagos_web).

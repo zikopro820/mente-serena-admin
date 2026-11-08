@@ -203,7 +203,7 @@
     fab.classList.remove("hidden");
     DB.radioEscuchar(Date.now() - 12 * 3600e3, llega);
     DB.radioLimpiar && DB.radioLimpiar().catch(() => {});
-    DB.citasNuevas && DB.citasNuevas(new Date().toISOString(), c => avisoLocal(`Nueva cita por la web: ${c.mascota}, ${c.servicio}${c.modalidad === "Online" ? ", online" : ""}, ${typeof largo === "function" ? largo(c.fecha) : c.fecha} a las ${c.hora}.`, "citas"));
+    DB.citasNuevas && DB.citasNuevas(new Date().toISOString(), c => avisoLocal(`Nueva cita por la web: ${c.mascota}, ${c.servicio}${c.modalidad === "Online" ? ", online" : ""}, ${typeof largo === "function" ? largo(c.fecha) : c.fecha} a las ${c.hora}${c.adelantoPend ? `, con adelanto de ${c.adelantoPend} soles por validar` : ""}.`, "citas"));
     if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
   }
   setInterval(() => { const on = typeof USER !== "undefined" && !!USER; if (on) iniciar(); fab.classList.toggle("hidden", !on); if (!on && abierto) abrir(false); }, 500);
