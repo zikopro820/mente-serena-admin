@@ -6,12 +6,12 @@
       (los datos se guardan solo en este navegador).
    ========================================================= */
 window.FIREBASE_CONFIG = {
-  apiKey: "PEGA_AQUI",
-  authDomain: "PEGA_AQUI",
-  projectId: "PEGA_AQUI",
-  storageBucket: "PEGA_AQUI",
-  messagingSenderId: "PEGA_AQUI",
-  appId: "PEGA_AQUI"
+  apiKey: "AIzaSyBNidGp3DrA-KXEZaYALrPJb9GuzFy7en4",
+  authDomain: "psiquiatra-90fdf.firebaseapp.com",
+  projectId: "psiquiatra-90fdf",
+  storageBucket: "psiquiatra-90fdf.firebasestorage.app",
+  messagingSenderId: "555550565106",
+  appId: "1:555550565106:web:54bb1cc19f97d4ea4b266b"
 };
 
 /* Datos del centro que usa el panel */
