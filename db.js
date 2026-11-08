@@ -85,6 +85,15 @@
   function capturaDemo(monto, op, metodo) {
     try {
       const c = document.createElement("canvas"); c.width = 360; c.height = 640; const g = c.getContext("2d"), yape = metodo === "Yape";
+      if (metodo === "BCP") {   // constancia de transferencia de ejemplo
+        g.fillStyle = "#fff"; g.fillRect(0, 0, 360, 640); g.fillStyle = "#0033a0"; g.fillRect(0, 0, 360, 96);
+        g.fillStyle = "#fff"; g.font = "bold 24px Arial"; g.textAlign = "center"; g.fillText("Constancia de transferencia", 180, 58);
+        g.fillStyle = "#222"; g.font = "bold 46px Arial"; g.fillText("S/ " + monto, 180, 190);
+        g.font = "17px Arial"; g.fillStyle = "#555"; [["Cuenta destino", "191-12345678-0-12"], ["Titular", "Mente Serena SAC"], ["Número de operación", op]].forEach(([a, b], i) => {
+          g.fillText(a, 180, 270 + i * 80); g.font = "bold 20px Arial"; g.fillStyle = "#222"; g.fillText(b, 180, 298 + i * 80); g.font = "17px Arial"; g.fillStyle = "#555"; });
+        const d = new Date(), M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]; g.fillText(`${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()} · 09:15`, 180, 540);
+        return c.toDataURL("image/jpeg", .8);
+      }
       g.fillStyle = yape ? "#742284" : "#0b6fae"; g.fillRect(0, 0, 360, 640);
       g.fillStyle = "#fff"; g.beginPath(); g.roundRect ? g.roundRect(24, 120, 312, 420, 22) : g.rect(24, 120, 312, 420); g.fill();
       g.fillStyle = "#fff"; g.font = "bold 26px Arial"; g.textAlign = "center"; g.fillText(yape ? "yape" : "plin", 180, 70);
@@ -98,15 +107,19 @@
     } catch (e) { return ""; }
   }
   function seedPagos(d) {
-    d.pagos_web = d.pagos_web || {};
+    d.pagos_web = d.pagos_web || {}; let tr = false;
     Object.entries(d.citas || {}).forEach(([id, c]) => {
-      if (c.fecha !== iso(0) || c.estado !== "confirmada") return;
-      if (c.mascota === "Andrea Torres") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Yape", adelantoEstado: "por-validar" });
+      if (c.estado !== "confirmada" || c.fecha < iso(0)) return; const hoy = c.fecha === iso(0);
+      if (hoy && c.mascota === "Andrea Torres") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Yape", adelantoEstado: "por-validar" });
         d.pagos_web[id] = { citaId: id, code: "", mascota: c.mascota, dueno: c.dueno, celular: c.celular, servicio: c.servicio, fecha: c.fecha, hora: c.hora, precio: c.precio, monto: 50, metodo: "Yape", operacion: "48213977",
           captura: capturaDemo("30", "48213977", "Yape"), montoLeido: 30, montosLeidos: [30], coincide: false, fechaOk: true, estado: "por-validar", creado: now() }; }
-      if (c.mascota === "Martín Salas") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Plin", adelantoEstado: "por-validar" });
+      if (hoy && c.mascota === "Martín Salas") { Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Plin", adelantoEstado: "por-validar" });
         d.pagos_web[id] = { citaId: id, code: "", mascota: c.mascota, dueno: c.dueno, celular: c.celular, servicio: c.servicio, fecha: c.fecha, hora: c.hora, precio: c.precio, monto: 50, metodo: "Plin", operacion: "90311452",
           captura: capturaDemo("50.00", "90311452", "Plin"), montoLeido: 50, montosLeidos: [50], coincide: true, fechaOk: true, estado: "por-validar", creado: now() }; }
+      else if (!tr && c.mascota !== "Andrea Torres" && !c.adelantoEstado && (+c.precio || 0) >= 50 && !(+c.pagado)) { tr = true;
+        Object.assign(c, { adelantoPend: 50, adelantoMetodo: "Transferencia BCP", adelantoEstado: "por-validar" });
+        d.pagos_web[id] = { citaId: id, code: c.code || "", mascota: c.mascota, dueno: c.dueno, celular: c.celular || "987445566", servicio: c.servicio, fecha: c.fecha, hora: c.hora, precio: c.precio, monto: 50, metodo: "Transferencia", banco: "BCP", operacion: "00561239",
+          captura: capturaDemo("50.00", "00561239", "BCP"), montoLeido: 50, montosLeidos: [50], coincide: true, fechaOk: true, estado: "por-validar", creado: now() }; }
     });
   }
   // Citas y caja de ejemplo para el MODO DEMO

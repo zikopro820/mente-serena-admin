@@ -926,3 +926,25 @@ a.st { text-decoration: none; }
 .pg-qr .prev img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
 .pg-qr .prev .ico { width: 30px; height: 30px; opacity: .5; }
 @media (max-width: 640px) { .pw, .pg-met { grid-template-columns: 1fr; } .pw-img { height: 260px; } }
+
+/* ---------- Transferencias bancarias ---------- */
+.pw-met.transf { background: var(--b1, #3d6b63); }
+.bk-mark { display: inline-flex; align-items: center; gap: 6px; background: var(--b1); color: #fff; font-weight: 800; font-size: .85rem; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+.bk-mark i { width: 9px; height: 9px; border-radius: 50%; background: var(--b2); box-shadow: 0 0 0 2px rgba(255,255,255,.7); }
+.pg-tr { border: 1px solid var(--line, #e3e8e6); border-radius: 14px; padding: 14px; display: grid; gap: 12px; }
+.pg-tr-h { display: flex; justify-content: space-between; gap: 14px; align-items: center; flex-wrap: wrap; }
+.pg-tr-h small { display: block; color: var(--muted, #6b7b77); font-size: .84rem; margin-top: 2px; }
+.pg-tr-h .chk { margin: 0; }
+#ctaList { display: grid; gap: 10px; }
+.cta { position: relative; display: grid; grid-template-columns: 130px 1fr; gap: 14px; background: #f8faf9; border: 1px solid var(--line, #e3e8e6); border-radius: 12px; padding: 12px 40px 12px 12px; }
+.cta-logo { display: grid; gap: 6px; justify-items: center; align-content: start; }
+.cta-logo .prev { width: 120px; height: 64px; background: #fff; border: 1px dashed var(--line, #cfd8d5); border-radius: 10px; display: grid; place-items: center; overflow: hidden; }
+.cta-logo .prev img { max-width: 100%; max-height: 54px; object-fit: contain; }
+.cta-f { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; }
+.cta-f .field { margin: 0; } .cta-f .field.full { grid-column: 1 / -1; }
+.cta-x { position: absolute; top: 8px; right: 8px; border: 0; background: transparent; cursor: pointer; color: var(--muted, #6b7b77); padding: 4px; border-radius: 8px; }
+.cta-x:hover { background: #fdecec; color: var(--red, #d64545); }
+.btn-xs { padding: 4px 9px; font-size: .74rem; }
+.lnk { border: 0; background: none; color: var(--red, #d64545); font: inherit; font-size: .74rem; cursor: pointer; text-decoration: underline; }
+@media (max-width: 760px) { .cta { grid-template-columns: 1fr; } .cta-f { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 420px) { .cta-f { grid-template-columns: 1fr; } }

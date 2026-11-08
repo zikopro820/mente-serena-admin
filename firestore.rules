@@ -118,9 +118,9 @@ service cloud.firestore {
         && request.resource.data.citaId == id
         && request.resource.data.estado == 'por-validar'
         && request.resource.data.monto is number && request.resource.data.monto > 0 && request.resource.data.monto <= 5000
-        && request.resource.data.metodo in ['Yape', 'Plin']
+        && request.resource.data.metodo in ['Yape', 'Plin', 'Transferencia']
         && request.resource.data.captura is string && request.resource.data.captura.size() < 900000
-        && request.resource.data.keys().hasOnly(['citaId', 'code', 'mascota', 'dueno', 'celular', 'servicio', 'fecha', 'hora', 'precio', 'monto', 'metodo',
+        && request.resource.data.keys().hasOnly(['citaId', 'banco', 'code', 'mascota', 'dueno', 'celular', 'servicio', 'fecha', 'hora', 'precio', 'monto', 'metodo',
              'operacion', 'captura', 'montoLeido', 'montosLeidos', 'coincide', 'fechaOk', 'estado', 'creado']));
       allow read, update, delete: if esAdmin();
     }
