@@ -1,0 +1,137 @@
+rules_version = '2';
+// =========================================================
+// REGLAS DE SEGURIDAD — Mente Serena
+// Copia TODO esto en Firebase > Firestore Database > Reglas > Publicar.
+// Cambia los correos por los del personal del centro (los mismos de
+// "equipo" en firebase-config.js).
+// =========================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Todo el personal del centro (profesionales, recepción y dirección)
+    function esAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'direccion@menteserena.pe', 'recepcion@menteserena.pe',
+          'camila@menteserena.pe', 'andres@menteserena.pe', 'mariana@menteserena.pe',
+          'valeria@menteserena.pe', 'ricardo@menteserena.pe'
+        ];
+    }
+    function yo() { return request.auth.token.email; }
+    function ajustes() { return /databases/$(database)/documents/ajustes/general; }
+    function capacidad() {
+      return exists(ajustes()) ? get(ajustes()).data.get('capacidad', 1) : 1;
+    }
+    function texto(v, max) { return v is string && v.size() <= max; }
+
+    // ---------- NOTAS DE SESIÓN: solo las lee y cambia QUIEN LAS ESCRIBIÓ ----------
+    // Ni recepción, ni otros profesionales, ni dirección, ni el paciente pueden leerlas.
+    match /notas/{id} {
+      allow create: if esAdmin() && request.resource.data.autor == yo();
+      allow read, delete: if esAdmin() && resource.data.autor == yo();
+      allow update: if esAdmin() && resource.data.autor == yo() && request.resource.data.autor == yo();
+    }
+    // Consentimientos firmados (con la firma): solo el personal
+    match /consentimientos/{id} {
+      allow read, write: if esAdmin();
+    }
+
+    // ---------- Pacientes ----------
+    // El público solo puede LEER un código si lo conoce exacto. La ficha que se
+    // lee con el código NO tiene notas clínicas (esas van en notas/).
+    match /clientes/{codigo} {
+      allow get: if true;
+      allow list, create, update, delete: if esAdmin();
+
+      match /mascotas/{paciente} {    // cada paciente del código (titular y familia)
+        allow read: if true;
+        allow write: if esAdmin();
+      }
+      match /fotos/{foto} {
+        allow read: if true;
+        allow write: if esAdmin();
+      }
+      // Copia de sus citas para "Mi Espacio"
+      match /agenda/{cita} {
+        allow read: if true;
+        allow create: if esAdmin() || (
+          existsAfter(/databases/$(database)/documents/citas/$(cita))
+          && request.resource.data.keys().hasOnly(['fecha', 'hora', 'servicio', 'precio', 'modalidad', 'mascota', 'mascotaId', 'total', 'pagado', 'estadoPago', 'estado', 'creado'])
+          && request.resource.data.pagado == 0 && request.resource.data.estado == 'confirmada');
+        allow update, delete: if esAdmin();
+      }
+    }
+
+    // Datos privados del titular (celular, correo, contacto de emergencia, notas administrativas)
+    match /privado/{codigo} {
+      allow read, write: if esAdmin();
+    }
+
+    // ---------- Agenda ----------
+    match /turnos/{turno} {
+      allow read: if true;
+      allow create: if esAdmin() || (
+        request.resource.data.keys().hasOnly(['fecha', 'hora', 'k', 'creado'])
+        && request.resource.data.k is int
+        && request.resource.data.k >= 1 && request.resource.data.k <= capacidad()
+        && turno == request.resource.data.fecha + '_' + request.resource.data.hora + '_' + string(request.resource.data.k)
+        && existsAfter(/databases/$(database)/documents/citas/$(turno)));
+      allow update, delete: if esAdmin();
+    }
+    // La web puede CREAR una reserva (confirmada, sin pagos), pero no leerlas
+    match /citas/{cita} {
+      allow create: if esAdmin() || (
+        existsAfter(/databases/$(database)/documents/turnos/$(cita))
+        && request.resource.data.origen == 'web'
+        && request.resource.data.estado == 'confirmada'
+        && request.resource.data.pagado == 0
+        && request.resource.data.estadoPago == 'pendiente'
+        && texto(request.resource.data.dueno, 80) && texto(request.resource.data.celular, 15)
+        && texto(request.resource.data.mascota, 60) && texto(request.resource.data.motivo, 300)
+        && request.resource.data.modalidad in ['Presencial', 'Online']
+        && request.resource.data.keys().hasOnly(['fecha', 'hora', 'k', 'servicioId', 'servicio', 'precio', 'modalidad', 'area', 'code', 'mascotaId', 'mascota',
+             'edad', 'preferencia', 'dueno', 'celular', 'motivo', 'origen', 'estado', 'pagado', 'estadoPago', 'creado']));
+      allow read, update, delete: if esAdmin();
+    }
+
+    // ---------- Radio del equipo ----------
+    match /radio/{id} {
+      allow read, create, delete: if esAdmin();
+    }
+
+    // ---------- Caja (solo el panel) ----------
+    match /movimientos/{id} {
+      allow read, write: if esAdmin();
+    }
+    match /inventario/{id} {
+      allow read, write: if esAdmin();
+    }
+
+    // ---------- Contenido de la web ----------
+    match /productos/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+    match /servicios/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+    match /productos_info/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+    match /medios/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+    match /ajustes/{id} {      // general, web, categorias, paginas y doctores (profesionales)
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // Búsquedas de todos los pacientes (inicio, seguimiento) — solo el panel
+    match /{ruta=**}/mascotas/{paciente} {
+      allow read: if esAdmin();
+    }
+  }
+}

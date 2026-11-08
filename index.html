@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Mente Serena | Administración</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#3d6b63">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <script src="firebase-config.js"></script>
+  <script src="datos.js"></script>
+  <script src="db.js"></script>
+  <script src="pdf.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="serena-base.js" defer></script>
+  <script src="modulos.js" defer></script>
+  <script src="modulos2.js" defer></script>
+  <script src="modulos3.js" defer></script>
+  <script src="modulos4.js" defer></script>
+  <script src="editor.js" defer></script>
+  <script src="radio.js" defer></script>
+  <script src="serena.js" defer></script>
+</head>
+<body>
+
+  <!-- ============ INGRESO ============ -->
+  <div class="login hidden" id="loginView">
+    <div class="login-l">
+      <div class="brand"><span class="paw"><svg viewBox="0 0 24 24"><path d="M12 21c-4.5-2.5-8-6.4-8-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 8 2.5c0 4.1-3.5 8-8 10.5z" fill="none" stroke="#fff" stroke-width="2"/><path d="M12 8c0-3 1.5-5 4-5-.2 2.6-1.6 4.3-4 5z" fill="#fff"/></svg></span><span>Mente Serena<small>Panel administrativo</small></span></div>
+      <div>
+        <h1>Tu centro de salud mental, ordenado y confidencial</h1>
+        <p>Agenda presencial y online, notas de sesión privadas, paquetes, tareas, cuestionarios, caja y radio del equipo. Tus pacientes siguen su proceso en Mi Espacio.</p>
+        <ul>
+          <li><i><svg class="ico" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg></i> Código único por paciente</li>
+          <li><i><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></i> Notas privadas: solo las ve su autor</li>
+          <li><i><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></i> Paquetes, citas online y WhatsApp</li>
+        </ul>
+      </div>
+      <small style="opacity:.75;position:relative;z-index:1">Panel creado por ziko.pro</small>
+    </div>
+    <div class="login-r">
+      <form class="login-box" id="loginForm">
+        <h2>Ingresar</h2>
+        <p>Acceso solo para el personal del centro.</p>
+        <div class="field"><label for="lEmail">Correo</label><input id="lEmail" type="email" autocomplete="username" required placeholder="camila@menteserena.pe"></div>
+        <div class="field"><label for="lPass">Contraseña</label><input id="lPass" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+        <button class="btn btn-pri" style="width:100%" type="submit" id="lBtn">Ingresar al panel</button>
+        <p class="err" id="lErr" role="alert"></p>
+        <div class="demo-hint hidden" id="demoHint"><b>Modo demo:</b> aún no conectaste Firebase. Elige con qué rol entrar y usa cualquier contraseña de 4 o más caracteres (ej. <b>demo123</b>). Prueba entrar como dos profesionales distintos: cada uno ve <b>solo sus notas</b>.
+          <div class="field" style="margin:10px 0 0"><label for="lRol">Entrar como</label><select id="lRol"><option value="direccion@menteserena.pe">Dirección (administración · todo)</option><option value="camila@menteserena.pe">Ps. Camila Ortega (psicóloga)</option><option value="valeria@menteserena.pe">Dra. Valeria Montes (psiquiatra)</option><option value="mariana@menteserena.pe">Ps. Mariana Ríos (psicóloga infantil)</option><option value="recepcion@menteserena.pe">Recepción (sin notas clínicas)</option></select></div></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ PANEL ============ -->
+  <div class="app hidden" id="appView">
+    <aside class="side" id="side">
+      <div class="brand"><span class="paw"><svg viewBox="0 0 24 24"><path d="M12 21c-4.5-2.5-8-6.4-8-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 8 2.5c0 4.1-3.5 8-8 10.5z" fill="none" stroke="#fff" stroke-width="2"/><path d="M12 8c0-3 1.5-5 4-5-.2 2.6-1.6 4.3-4 5z" fill="#fff"/></svg></span><span>Mente Serena<small>Panel</small></span></div>
+      <nav id="nav">
+        <button data-view="inicio"><svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg> Inicio</button>
+        <button data-view="agenda"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg> Agenda</button>
+        <button data-view="clientes"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M1 21a8 8 0 0 1 16 0M17 4a4 4 0 0 1 0 8M23 21a8 8 0 0 0-5-7.4"/></svg> Pacientes</button>
+        <button data-view="vacunas"><svg class="ico" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg> Seguimiento</button>
+        <button data-view="caja" data-rol="caja"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg> Caja</button>
+        <button data-view="doctores"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21c-4.5-2.5-8-6.4-8-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 8 2.5c0 4.1-3.5 8-8 10.5z"/></svg> Profesionales</button>
+        <button data-view="reportes" data-rol="admin"><svg class="ico" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> Reportes</button>
+        <span class="nav-label" data-rol="admin">Página web</span>
+        <button data-view="editor" data-rol="admin"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Editor de páginas</button>
+        <button data-view="servicios" data-rol="admin"><svg class="ico" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-10 16-10 0 10-4 16-10 16"/><path d="M4 21c3-6 7-9 12-11"/></svg> Servicios</button>
+        <button data-view="categorias" data-rol="admin"><svg class="ico" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg> Categorías</button>
+        <button data-view="ajustes" data-rol="admin"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg> Ajustes</button>
+      </nav>
+      <div class="side-foot">
+        Sesión: <b id="who"></b><span class="rol-tag" id="rolTag"></span>
+        <span class="mode" id="modeTag"></span>
+        <button class="btn btn-sm" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main" id="view"><p class="loading">Cargando…</p></main>
+  </div>
+
+  <!-- ============ VENTANA ============ -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <form class="modal-box" id="modalForm" novalidate>
+      <div class="modal-h"><h3 id="mTitle"></h3><button type="button" class="icon-btn" data-mclose aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="modal-b" id="mBody"></div>
+      <div class="modal-f"><button type="button" class="btn btn-light" data-mclose>Cancelar</button><button type="submit" class="btn btn-pri" id="mOk">Guardar</button></div>
+    </form>
+  </div>
+  <div class="toast" id="toast"></div>
+</body>
+</html>

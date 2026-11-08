@@ -1,0 +1,58 @@
+PANEL MENTE SERENA — CÓMO CONFIGURARLO
+======================================
+
+Sin hacer nada, el panel funciona en MODO DEMO: eliges con qué rol entrar
+(Dirección, psicóloga, psiquiatra o recepción), usas cualquier contraseña de
+4 o más caracteres y los datos se guardan solo en ese navegador.
+
+1. CREAR FIREBASE (gratis, plan Spark)
+   a) https://console.firebase.google.com → "Crear un proyecto" (ej. mente-serena).
+   b) Botón "</>" (agregar app web) → nombre → Registrar.
+   c) Copia los datos de "firebaseConfig".
+
+2. PEGAR LA CONFIGURACIÓN
+   En firebase-config.js de ESTE repositorio (mente-serena-admin)
+   y en firebase-config.js del repositorio "mente-serena" (la web).
+
+3. EQUIPO Y PERMISOS (firebase-config.js → equipo)
+   Escribe el correo, nombre y rol de cada persona:
+   - "Administración"  → ve todo: reportes, editor de la web, servicios y ajustes.
+   - "Psicólogo(a)" / "Psiquiatra" → agenda, pacientes y SUS notas privadas.
+     Pon su profId (el id que tiene en Profesionales: camila, valeria…).
+   - "Recepción" / "Caja" → citas, pacientes, pagos y paquetes. NUNCA ve notas.
+
+4. BASE DE DATOS Y REGLAS
+   Firestore Database → Crear base de datos → modo producción.
+   Pestaña "Reglas": borra todo, pega firestore.rules, CAMBIA los correos por los
+   mismos del paso 3 y presiona Publicar.
+   Las reglas hacen que cada NOTA DE SESIÓN solo la pueda leer quien la escribió.
+
+5. USUARIOS
+   Authentication → Correo/contraseña → Habilitar → Usuarios → Agregar usuario
+   (uno por cada correo del paso 3).
+
+6. DOMINIO AUTORIZADO
+   Authentication → Configuración → Dominios autorizados → zikopro820.github.io
+
+7. PRIMER INGRESO (con el usuario de Administración)
+   a) Servicios → "Cargar ejemplos" (o crea los tuyos).
+   b) Profesionales → nombres, área (psicología o psiquiatría), días y horarios.
+   c) Ajustes → WhatsApp, dirección, horario, RUC y un enlace fijo de Meet (opcional).
+   d) Editor de páginas → textos y fotos de la web, página por página.
+
+QUÉ HACE CADA PARTE
+- Agenda: citas presenciales u online (con enlace de videollamada), citas que se
+  repiten cada semana, "No asistió", iniciar/terminar sesión y cobrar.
+- Pacientes: ficha con terapeuta y psiquiatra, consentimiento informado firmado en
+  pantalla (PDF), paquetes de sesiones (se descuentan solos), tareas para la casa,
+  cuestionarios GAD-7 y PHQ-9 con gráfico, constancias y notas privadas.
+- Seguimiento: WhatsApp con un clic para sesiones de mañana, paquetes por terminar,
+  saldos y pacientes que dejaron de venir.
+- Radio del equipo: botón abajo a la derecha. Con "Estoy en sesión" la radio del
+  profesional no suena (solo vibra y muestra el texto); los avisos URGENTES sí suenan.
+- Mi Espacio (web): el paciente ve sus sesiones, entra a la videollamada, ve paquetes,
+  tareas, su avance y descarga recibos, recetas y constancias. Nunca ve notas.
+
+Nota: el apiKey de Firebase NO es secreto. La seguridad la dan las reglas y los usuarios.
+Recuerda: los menús que se ocultan por rol son comodidad; la protección real de las
+notas clínicas está en las reglas de Firestore (paso 4).
