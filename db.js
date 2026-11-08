@@ -16,7 +16,7 @@
   const iso = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
   /* ---------------- MODO DEMO (localStorage) ---------------- */
-  const MEET = "https://meet.google.com/abc-defg-hij";
+  const MEET = "https://meet.google.com/cam-ort-ega", ZOOM_AND = "https://zoom.us/j/5551234567";   // salas de ejemplo (Camila y Andrés)
   function seed() {
     const P = extra => ({ historial: [], rec: [], paquetes: [], tareas: [], escalas: [], ...extra, actualizado: now() });
     const ses = (dias, hora, t, vet, mod, extra = {}) => ({ id: uid(), f: iso(dias), hora, t, vet, modalidad: mod, monto: 0, pagado: 0, ...extra });
@@ -146,7 +146,7 @@
     add(0, "18:00", { pac: "Andrea Torres", cel: "987001122", serv: "Primera consulta de orientación", sid: "orientacion", precio: 60, mod: "Online", origen: "web" });
     add(1, "19:00", { ...L, ...cam, serv: "Terapia individual · sesión 6", sid: "terapia-individual", mod: "Online", enlace: MEET, paq: "pq1" });
     add(4, "16:00", { ...Q, ...mar, serv: "Terapia infantil · sesión 4", sid: "terapia-infantil", paq: "pq2" });
-    add(9, "20:00", { ...C, ...and, serv: "Orientación a padres", sid: "terapia-individual", precio: 110, mod: "Online", enlace: MEET });
+    add(9, "20:00", { ...C, ...and, serv: "Orientación a padres", sid: "terapia-individual", precio: 110, mod: "Online", enlace: ZOOM_AND });
     add(16, "17:00", { ...L, ...val, serv: "Control psiquiátrico", sid: "control-psiquiatrico", precio: 120 });
     // historial de las últimas semanas (para caja y reportes)
     const pacs = [["Diego Paredes", "terapia-individual", "Terapia individual", 110, cam], ["Sofía Quispe", "terapia-pareja", "Terapia de pareja", 160, and], ["Valentina Ríos", "terapia-adolescentes", "Terapia para adolescentes", 110, mar],

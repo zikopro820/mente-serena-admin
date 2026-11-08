@@ -125,6 +125,11 @@ service cloud.firestore {
       allow read, update, delete: if esAdmin();
     }
 
+    // ---------- Salas de videollamada de cada profesional (privado) ----------
+    match /salas/{id} {
+      allow read, write: if esAdmin();
+    }
+
     // ---------- Radio del equipo ----------
     match /radio/{id} {
       allow read, create, delete: if esAdmin();

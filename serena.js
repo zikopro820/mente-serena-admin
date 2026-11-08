@@ -333,7 +333,7 @@ VIEWS.ajustes = async () => {
   $$(".card-h h2", F).forEach(h => { if (/Delivery/.test(h.textContent)) { const box = h.closest(".card-h"); let n = box.nextElementSibling; box.remove(); if (n && n.classList.contains("grid2")) n.remove(); } });
   const rt = $("[name=tiempoReal]", F)?.closest(".chk"); if (rt) { rt.querySelector("b").textContent = "Usar «Iniciar sesión» y «Terminar» en la agenda"; rt.querySelector("small").textContent = "Muestra quién está en sesión ahora, activa el modo silencioso de la radio para ese profesional y avisa a recepción y caja al terminar."; }
   F.lastElementChild.insertAdjacentHTML("beforebegin", `<div class="card-h" style="margin-top:10px"><h2>${ico("video")} Sesiones online</h2></div>
-    <div class="grid2">${fld("enlaceFijo", "Enlace fijo de videollamada (opcional)", a.enlaceFijo || "", { full: true, ph: "https://meet.google.com/… · se propone en cada cita online" })}</div><div style="height:10px"></div>`);
+    <div class="grid2"><p class="sub full" style="margin:-4px 0 4px">Cada profesional tiene su propia sala: se configura en <b>Profesionales → Sala</b> y se pone sola en sus citas online.</p>${fld("enlaceFijo", "Enlace de respaldo (opcional)", a.enlaceFijo || "", { full: true, ph: "Solo se propone en citas online que aún no tienen profesional" })}</div><div style="height:10px"></div>`);
   F.addEventListener("submit", async () => { if ($$("[required]", F).some(x => !x.value.trim())) return; await safe(() => DB.saveAjustes({ enlaceFijo: $("[name=enlaceFijo]", F).value.trim() })); });
 };
 

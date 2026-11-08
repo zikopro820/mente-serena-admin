@@ -66,3 +66,11 @@ notas clínicas está en las reglas de Firestore (paso 4).
      y pulsa «Validar pago»: se registra en Caja y en la cita, y avisas al paciente por WhatsApp.
      Si no llegó, «Rechazar» (la cita sigue reservada).
    - IMPORTANTE: vuelve a publicar firestore.rules (tiene la regla nueva de pagos_web).
+
+9. VIDEOLLAMADAS (citas online)
+   - Profesionales → en cada tarjeta pulsa «Poner sala» y pega SU enlace fijo de Google Meet
+     o Zoom (uno distinto por profesional). En Zoom activa la «sala de espera».
+   - Desde ahí, toda cita online de ese profesional recibe su enlace sola: al crearla en el
+     panel, al asignarle profesional, o al abrir Inicio/Agenda (para las reservas de la web).
+   - El paciente ve en Mi Espacio «Entrar a mi sesión», que se activa 10 minutos antes.
+   - Las salas se guardan en una colección privada: vuelve a publicar firestore.rules.

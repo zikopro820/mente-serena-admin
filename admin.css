@@ -948,3 +948,14 @@ a.st { text-decoration: none; }
 .lnk { border: 0; background: none; color: var(--red, #d64545); font: inherit; font-size: .74rem; cursor: pointer; text-decoration: underline; }
 @media (max-width: 760px) { .cta { grid-template-columns: 1fr; } .cta-f { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 420px) { .cta-f { grid-template-columns: 1fr; } }
+
+/* ---------- Salas de videollamada ---------- */
+.sala-row { display: flex; align-items: center; gap: 8px; font-size: .84rem; background: #fdecec; color: #8a2a2a; border-radius: 10px; padding: 8px 10px; margin: 10px 0 4px; }
+.sala-row.ok { background: #e6f8f1; color: #1f5f47; }
+.sala-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sala-row a { color: inherit; }
+.sala-row .ico { width: 16px; height: 16px; flex: none; }
+.sala-tips { background: #f6f8f7; border-radius: 12px; padding: 12px 14px; margin-top: 12px; font-size: .84rem; color: #4b5a56; }
+.sala-tips p { margin: 6px 0 0; }
+.doc-card { grid-template-columns: minmax(0, 1fr); }
+.sala-row { flex-wrap: wrap; } .sala-row span { flex: 1 1 150px; }
